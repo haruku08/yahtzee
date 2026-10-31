@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#006a60">
+<meta name="description" content="A Material 3 Yatzy scorecard. Play live across phones with a 4-letter code, or keep one classic scorecard on a single device.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='%23006a60'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='20' cy='20' r='5'/%3E%3Ccircle cx='44' cy='20' r='5'/%3E%3Ccircle cx='32' cy='32' r='5'/%3E%3Ccircle cx='20' cy='44' r='5'/%3E%3Ccircle cx='44' cy='44' r='5'/%3E%3C/g%3E%3C/svg%3E">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="vendor/supabase-2.45.4.js"></script>
+<title>Yatzy Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300..800&family=Roboto+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&display=block">
+<style>
+/* Layout: Material 3 app — top app bar, standings strip, then one scorecard table with a sticky category column. Seed: deep felt teal. */
+:root{
+  --primary:#006a60;--on-primary:#fff;--primary-container:#9ef2e4;--on-primary-container:#00201c;
+  --secondary:#4a635f;--secondary-container:#cce8e2;--on-secondary-container:#05201c;
+  --tertiary:#456179;--tertiary-container:#cce5ff;--on-tertiary-container:#001e31;
+  --surface:#f4fbf8;--surface-lowest:#ffffff;--surface-low:#eef5f2;--surface-container:#e9efec;--surface-high:#e3eae7;--surface-highest:#dde4e1;
+  --on-surface:#161d1b;--on-surface-variant:#3f4946;--outline:#6f7976;--outline-variant:#bec9c5;
+  --error:#ba1a1a;--error-container:#ffdad6;--on-error-container:#410002;
+  --inverse-surface:#2b3230;--inverse-on-surface:#ecf2ef;--scrim:rgba(0,0,0,.32);
+  --gold:#7a5900;--gold-container:#ffdf9e;
+  --p0:#006a60;--p1:#8b4a62;--p2:#4f5fa8;--p3:#8a5100;--p4:#58642a;--p5:#7a4fa0;--p6:#a03a2f;--p7:#00668b;
+  --font:"Roboto Flex","Roboto",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Roboto Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --shape-xs:4px;--shape-s:8px;--shape-m:12px;--shape-l:16px;--shape-xl:28px;
+  --elev1:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15);
+  --elev3:0 1px 3px rgba(0,0,0,.3),0 4px 8px 3px rgba(0,0,0,.15);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --primary:#53dbc9;--on-primary:#003731;--primary-container:#005048;--on-primary-container:#9ef2e4;
+  --secondary:#b1ccc6;--secondary-container:#334b47;--on-secondary-container:#cce8e2;
+  --tertiary:#adcae6;--tertiary-container:#2d4961;--on-tertiary-container:#cce5ff;
+  --surface:#0e1513;--surface-lowest:#090f0e;--surface-low:#161d1b;--surface-container:#1a211f;--surface-high:#252b2a;--surface-highest:#2f3634;
+  --on-surface:#dde4e1;--on-surface-variant:#bec9c5;--outline:#899390;--outline-variant:#3f4946;
+  --error:#ffb4ab;--error-container:#93000a;--on-error-container:#ffdad6;
+  --inverse-surface:#dde4e1;--inverse-on-surface:#2b3230;--scrim:rgba(0,0,0,.6);
+  --gold:#f5bf48;--gold-container:#5c4300;
+  --p0:#53dbc9;--p1:#ffb0c9;--p2:#b9c3ff;--p3:#ffb86f;--p4:#c1cf8a;--p5:#e1b6ff;--p6:#ffb4a8;--p7:#7cd0ff;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --primary:#53dbc9;--on-primary:#003731;--primary-container:#005048;--on-primary-container:#9ef2e4;
+  --secondary:#b1ccc6;--secondary-container:#334b47;--on-secondary-container:#cce8e2;
+  --tertiary:#adcae6;--tertiary-container:#2d4961;--on-tertiary-container:#cce5ff;
+  --surface:#0e1513;--surface-lowest:#090f0e;--surface-low:#161d1b;--surface-container:#1a211f;--surface-high:#252b2a;--surface-highest:#2f3634;
+  --on-surface:#dde4e1;--on-surface-variant:#bec9c5;--outline:#899390;--outline-variant:#3f4946;
+  --error:#ffb4ab;--error-container:#93000a;--on-error-container:#ffdad6;
+  --inverse-surface:#dde4e1;--inverse-on-surface:#2b3230;--scrim:rgba(0,0,0,.6);
+  --gold:#f5bf48;--gold-container:#5c4300;
+  --p0:#53dbc9;--p1:#ffb0c9;--p2:#b9c3ff;--p3:#ffb86f;--p4:#c1cf8a;--p5:#e1b6ff;--p6:#ffb4a8;--p7:#7cd0ff;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--surface);color:var(--on-surface);font-family:var(--font);font-size:14px;line-height:1.43;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface-container)}
+button,input{font:inherit;color:inherit}
+.ms{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-feature-settings:"liga";user-select:none;width:1em;overflow:hidden}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+
+/* top app bar */
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface-container);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.appbar-in{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:4px;min-height:64px}
+.appbar h1{font-size:22px;font-weight:500;margin:0 0 0 8px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+.appbar h1 small{display:block;font-size:12px;font-weight:500;color:var(--on-surface-variant);letter-spacing:.4px;line-height:1.2}
+.icon-btn{width:48px;height:48px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--on-surface-variant);position:relative;flex:none}
+.icon-btn:hover{background:color-mix(in srgb,var(--on-surface-variant) 8%,transparent)}
+.icon-btn:active{background:color-mix(in srgb,var(--on-surface-variant) 12%,transparent)}
+
+main{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 96px;display:flex;flex-direction:column;gap:16px}
+
+/* buttons */
+.btn{height:40px;padding:0 24px;border-radius:20px;border:0;font-size:14px;font-weight:500;letter-spacing:.1px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;position:relative;overflow:hidden;white-space:nowrap}
+.btn .ms{font-size:18px;margin-left:-8px}
+.btn::after{content:"";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .15s}
+.btn:hover::after{opacity:.08}.btn:active::after{opacity:.12}
+.btn:disabled{opacity:.38;cursor:default}.btn:disabled::after{opacity:0}
+.filled{background:var(--primary);color:var(--on-primary)}
+.tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.outlined{background:transparent;color:var(--primary);border:1px solid var(--outline)}
+.text{background:transparent;color:var(--primary);padding:0 12px}
+.danger{background:var(--error);color:var(--surface)}
+.fab{position:fixed;right:max(16px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(16px + env(safe-area-inset-bottom,0px));height:56px;border-radius:16px;padding:0 20px 0 16px;background:var(--primary-container);color:var(--on-primary-container);box-shadow:var(--elev3);border:0;display:inline-flex;align-items:center;gap:12px;font-weight:500;font-size:14px;cursor:pointer;z-index:4}
+.fab:hover{filter:brightness(.97)}
+
+/* fields */
+.field{position:relative;display:block}
+.field input{width:100%;height:56px;border-radius:var(--shape-xs);border:1px solid var(--outline);background:transparent;padding:0 16px;font-size:16px;outline:0}
+.field input:focus{border:2px solid var(--primary);padding:0 15px}
+.field span{position:absolute;left:12px;top:-8px;padding:0 4px;font-size:12px;color:var(--on-surface-variant);background:var(--fieldbg,var(--surface))}
+.field input:focus + span{color:var(--primary)}
+.code-input{font-family:var(--mono)!important;letter-spacing:6px;text-transform:uppercase}
+
+/* lobby */
+.hero{display:grid;gap:8px;padding-block:8px}
+.hero h2{font-size:32px;line-height:40px;font-weight:400;margin:0;text-wrap:balance;max-width:20ch}
+.hero p{margin:0;color:var(--on-surface-variant);font-size:16px;max-width:52ch}
+.lobby{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.card{background:var(--surface-low);border-radius:var(--shape-m);padding:24px;display:flex;flex-direction:column;gap:20px;--fieldbg:var(--surface-low)}
+.card.elev{background:var(--surface-lowest);box-shadow:var(--elev1);--fieldbg:var(--surface-lowest)}
+.card h3{font-size:22px;font-weight:400;margin:0;display:flex;align-items:center;gap:12px}
+.card h3 .ms{color:var(--primary)}
+.card p{margin:-12px 0 0;color:var(--on-surface-variant)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.err{color:var(--error);font-size:12px;margin-top:-12px;min-height:16px}
+.dice-art{display:flex;gap:8px;padding-top:4px}
+
+/* banner */
+.banner{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:var(--shape-m);background:var(--tertiary-container);color:var(--on-tertiary-container)}
+.banner .ms{flex:none}
+.banner.win{background:var(--gold-container);color:var(--on-surface);align-items:center;flex-wrap:wrap}
+.banner.win .ms{color:var(--gold)}
+.banner b{font-weight:600}
+.banner .grow{flex:1;min-width:180px}
+
+/* standings */
+.standings{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.stand{flex:1 0 auto;min-width:140px;display:flex;align-items:center;gap:12px;padding:12px 16px 12px 12px;border-radius:var(--shape-m);background:var(--surface-low);border:1px solid var(--outline-variant)}
+.stand.lead{background:var(--secondary-container);border-color:transparent;color:var(--on-secondary-container)}
+.stand .meta{display:flex;flex-direction:column;min-width:0}
+.stand .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:14ch}
+.stand .sub{font-size:12px;color:var(--on-surface-variant);letter-spacing:.4px}
+.stand .tot{margin-left:auto;font-size:24px;font-weight:500;padding-left:8px}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:15px;flex:none;color:var(--surface);background:var(--pc)}
+.avatar.sm{width:28px;height:28px;font-size:13px}
+
+/* scorecard */
+.sheet-wrap{background:var(--surface-lowest);border-radius:var(--shape-l);box-shadow:var(--elev1);overflow-x:auto;overscroll-behavior-x:contain}
+table.score{border-collapse:separate;border-spacing:0;width:100%}
+.score th,.score td{padding:0;border-bottom:1px solid var(--outline-variant);height:48px;text-align:center}
+.score thead th{height:auto;padding:12px 8px;vertical-align:bottom;background:var(--surface-lowest);border-bottom:1px solid var(--outline)}
+.score .cat{position:sticky;left:0;z-index:1;background:var(--surface-lowest);text-align:left;padding:0 12px 0 16px;width:168px;min-width:148px;border-right:1px solid var(--outline-variant)}
+.score .cat b{display:block;font-weight:500;font-size:14px;line-height:18px}
+.score .cat i{display:block;font-style:normal;font-size:11px;color:var(--on-surface-variant);letter-spacing:.3px;line-height:14px}
+.score .sec td,.score .sec th{height:36px;background:var(--surface-low);font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--primary);text-align:left;padding-left:16px}
+.score .sec th.cat{background:var(--surface-low)}
+.score .sum td,.score .sum th{background:var(--surface-container)}
+.score .sum .cat{background:var(--surface-container)}
+.score .grand td,.score .grand th{background:var(--primary-container);color:var(--on-primary-container);height:56px;border-bottom:0}
+.score .grand .cat{background:var(--primary-container)}
+.score .grand td{font-size:22px;font-weight:600}
+.pcol{min-width:84px}
+.phead{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;cursor:pointer;padding:4px 6px;border-radius:var(--shape-s);width:100%;min-width:72px}
+.phead:hover{background:var(--surface-container)}
+.phead .nm{font-weight:500;font-size:13px;max-width:10ch;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:1px 6px;border-radius:6px;background:var(--primary);color:var(--on-primary)}
+.tag.ghost{background:transparent;color:var(--on-surface-variant);border:1px solid var(--outline-variant)}
+td .cell{width:100%;height:100%;min-height:47px;border:0;background:transparent;font-size:18px;font-weight:500;cursor:pointer;display:grid;place-items:center;position:relative}
+td .cell:hover{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+td .cell.empty{color:var(--outline);font-weight:400;font-size:16px}
+td .cell.zero{color:var(--on-surface-variant)}
+td .cell.zero::after{content:"";position:absolute;left:30%;right:30%;top:50%;height:1.5px;background:currentColor;opacity:.5;transform:rotate(-12deg)}
+td .cell.ro{cursor:default}td .cell.ro:hover{background:transparent}
+td .cell.flash{animation:flash .9s ease-out}
+@keyframes flash{0%{background:color-mix(in srgb,var(--primary) 30%,transparent)}100%{background:transparent}}
+td.mine{background:color-mix(in srgb,var(--primary) 4%,transparent)}
+.prog{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:13px;font-weight:500}
+.prog .bar{width:52px;height:4px;border-radius:2px;background:var(--surface-highest);overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--primary);border-radius:2px}
+.prog.done{color:var(--primary)}
+.bonus-on{color:var(--gold);font-weight:700}
+.dim{color:var(--outline)}
+
+/* dialog / bottom sheet */
+dialog.bs{border:0;padding:0;margin:auto auto 0;width:100%;max-width:640px;max-height:90vh;border-radius:28px 28px 0 0;background:var(--surface-low);color:var(--on-surface);box-shadow:var(--elev3)}
+@media (min-width:700px){dialog.bs{margin:auto;border-radius:28px;max-width:440px}}
+dialog.bs::backdrop{background:var(--scrim)}
+.bs-in{padding:8px 24px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;--fieldbg:var(--surface-low)}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--outline);opacity:.4;margin:8px auto 4px}
+.bs h4{margin:0;font-size:22px;font-weight:400;display:flex;align-items:center;gap:12px}
+.bs .lede{margin:-8px 0 0;color:var(--on-surface-variant)}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.chip.kind{height:84px;gap:6px}.chip.kind small{font-size:12px}.chip.kind small b{font-size:14px;font-weight:600}
+.sumchips{grid-template-columns:repeat(6,1fr);gap:6px}.sumchips .chip{height:44px}.sumchips .chip small{font-size:9px}.sumchips .chip b{font-size:17px}
+.chip{height:56px;border-radius:var(--shape-s);border:1px solid var(--outline-variant);background:var(--surface-lowest);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.1}
+.chip b{font-size:20px;font-weight:500}
+.chip small{font-size:11px;color:var(--on-surface-variant);letter-spacing:.3px}
+.chip:hover{border-color:var(--primary)}
+.chip.sel{background:var(--secondary-container);border-color:transparent;color:var(--on-secondary-container)}
+.chip.zero b{color:var(--on-surface-variant)}
+.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.actions .spacer{flex:1}
+
+/* dice */
+.dice{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.die{width:52px;height:52px;border-radius:12px;background:var(--surface-lowest);border:1.5px solid var(--outline);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:8px;cursor:pointer;place-items:center}
+.die.slot{border-style:dashed;border-color:var(--outline-variant);background:transparent;cursor:default}
+.die.face{background:var(--secondary-container);border-color:transparent}.die.face i{background:var(--on-secondary-container)}.die.face:disabled{opacity:.38;cursor:default}
+.tray .die[data-i]{border-color:var(--primary)}
+.die.unset{border-style:dashed;display:grid;place-items:center;grid-template:1fr/1fr;color:var(--outline);font-size:20px}
+.die i{width:8px;height:8px;border-radius:50%;background:var(--on-surface);visibility:hidden}
+.die i.on{visibility:visible}
+.die.art{width:40px;height:40px;padding:6px;border-radius:10px;cursor:default;background:var(--primary-container);border-color:transparent}
+.die.art i{width:7px;height:7px;background:var(--on-primary-container)}
+.die:not(.art):hover{border-color:var(--primary)}
+.dice-total{text-align:center;font-size:14px;color:var(--on-surface-variant)}
+.dice-total b{display:block;font-size:40px;line-height:48px;font-weight:400;color:var(--on-surface)}
+.warn{color:var(--error)}
+.opts{display:flex;flex-direction:column;gap:4px;max-height:42vh;overflow-y:auto;margin:0 -8px;padding:0 8px}
+.opt{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;border-radius:var(--shape-m);border:0;background:var(--surface-lowest);cursor:pointer;text-align:left}
+.opt span:first-child{flex:1;min-width:0}
+.opt b{display:block;font-weight:500;font-size:16px}
+.opt i{display:block;font-style:normal;font-size:12px;color:var(--on-surface-variant)}
+.opt .pts{font-size:22px;font-weight:600;color:var(--primary);min-width:3ch;text-align:right}
+.opt .pts.zero{color:var(--outline);font-weight:400}
+.opt.focus{background:var(--secondary-container);color:var(--on-secondary-container)}
+.opt:hover:not(:disabled){outline:1px solid var(--primary)}
+.opt:disabled{opacity:.45;cursor:default}
+.stepper{display:flex;align-items:center;justify-content:center;gap:24px}
+.stepper output{font-size:40px;min-width:3ch;text-align:center}
+
+/* snackbar */
+.snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));background:var(--inverse-surface);color:var(--inverse-on-surface);padding:14px 16px;border-radius:4px;box-shadow:var(--elev3);max-width:min(560px,calc(100% - 32px));z-index:20;font-size:14px}
+
+/* menu */
+.menu{position:fixed;z-index:12;background:var(--surface-container);border-radius:4px;box-shadow:var(--elev3);padding:8px 0;min-width:220px;top:calc(56px + env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px))}
+.menu button{display:flex;align-items:center;gap:12px;width:100%;height:48px;padding:0 16px;border:0;background:transparent;cursor:pointer;text-align:left;font-size:14px}
+.menu button:hover{background:var(--surface-highest)}
+.menu .ms{color:var(--on-surface-variant);font-size:22px}
+.menu hr{border:0;border-top:1px solid var(--outline-variant);margin:8px 0}
+.switch-row{justify-content:space-between}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--surface-highest);border:2px solid var(--outline);position:relative;flex:none}
+.sw::after{content:"";position:absolute;left:6px;top:6px;width:16px;height:16px;border-radius:50%;background:var(--outline);transition:all .15s}
+.sw.on{background:var(--primary);border-color:var(--primary)}
+.sw.on::after{left:22px;top:2px;width:24px;height:24px;background:var(--on-primary)}
+
+.codechip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px 0 8px;border-radius:8px;border:1px solid var(--outline-variant);background:transparent;font-family:var(--mono);letter-spacing:2px;font-size:14px;cursor:pointer;color:var(--on-surface)}
+.codechip .ms{font-size:18px;color:var(--on-surface-variant)}
+.live{width:8px;height:8px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 0 var(--primary);animation:pulse 2s infinite}
+.live.off{background:var(--outline);animation:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--primary) 50%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.empty-state{padding:32px 24px;text-align:center;color:var(--on-surface-variant);display:grid;gap:12px;justify-items:center}
+
+/* TV view: read-only big screen for casting */
+.board{display:flex;flex-direction:column;gap:16px;min-width:0}
+.tvhead{display:none}
+body.tv .appbar,body.tv .fab,body.tv::before{display:none}
+body.tv{background:var(--surface-container);overflow-x:hidden}
+body.tv main{max-width:none;padding-block:max(16px,2vh) 16px;gap:max(12px,1.6vh)}
+body.tv .tvhead{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+body.tv .tvhead h2{margin:0;font-size:clamp(28px,3.2vw,56px);font-weight:400;line-height:1.1}
+body.tv .tvhead p{margin:4px 0 0;font-size:clamp(16px,1.5vw,26px);color:var(--on-surface-variant)}
+.tvcode{font-family:var(--mono);letter-spacing:.2em;color:var(--primary);font-weight:500}
+body.tv .board{display:grid;grid-template-columns:minmax(240px,26%) 1fr;gap:max(16px,1.6vw);align-items:start}
+body.tv .standings{flex-direction:column;overflow:visible;gap:max(8px,1vh)}
+body.tv .stand{min-width:0;padding:max(12px,1.4vh) 20px;border-radius:var(--shape-l)}
+body.tv .stand .nm{font-size:clamp(16px,1.6vw,28px);max-width:none}
+body.tv .stand .sub{font-size:clamp(12px,1vw,16px)}
+body.tv .stand .tot{font-size:clamp(28px,3vw,56px)}
+body.tv .stand .avatar{width:clamp(36px,3.4vw,60px);height:clamp(36px,3.4vw,60px);font-size:clamp(15px,1.5vw,26px)}
+body.tv .score th,body.tv .score td{height:max(22px,calc((100vh - 210px) / 24));padding-block:0}
+body.tv .score .sec td,body.tv .score .sec th{height:max(20px,calc((100vh - 230px) / 30))}
+body.tv .score thead th{padding:6px}body.tv .phead{flex-direction:row;justify-content:center;gap:8px;padding:2px}body.tv .score .grand td,body.tv .score .grand th{height:max(36px,calc((100vh - 230px) / 16))}
+body.tv .prog .bar{display:none}
+body.tv td .cell{min-height:0;padding:0;line-height:1;height:auto;font-size:clamp(15px,min(1.6vw,3vh),30px)}
+body.tv .score .cat b{font-size:clamp(13px,min(1.2vw,2.4vh),22px);line-height:1.1}
+body.tv .score .cat i{display:none}
+body.tv .score .cat{width:auto;min-width:0}
+body.tv .phead .nm{font-size:clamp(13px,1.2vw,22px);max-width:14ch}
+body.tv .phead .tag{display:none}
+body.tv .score thead th:first-child span{display:none}
+body.tv .score .grand td{font-size:clamp(22px,2.4vw,44px)}
+body.tv .banner{font-size:clamp(14px,1.4vw,24px)}
+@media (max-width:760px){body.tv .board{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:420px){.hero h2{font-size:28px;line-height:36px}.score .cat{width:118px;min-width:112px;padding:0 6px 0 12px}.score .cat i{font-size:10px}.pcol{min-width:60px}.phead{min-width:56px}}
+</style>
+
+</head>
+<body>
+<header class="appbar"><div class="appbar-in" id="bar"></div></header>
+<main id="app"></main>
+<button class="fab" id="fab" hidden><span class="ms">person_add</span><span>Add player</span></button>
+<dialog class="bs" id="dlg"><div class="handle"></div><div class="bs-in" id="dlgIn"></div></dialog>
+<div class="snack" id="snack" hidden></div>
+<div class="menu" id="menu" hidden></div>
+
+<script>
+(() => {
+const SHARE_BASE = location.origin + location.pathname;
+const SB_URL = "https://cjedysrrwakggemizeex.supabase.co";
+const SB_KEY = "sb_publishable_1OBpws1m1FCT903RdgJExw_gsPJ7lta";
+const CATS = [
+  {k:"ones",label:"Ones",face:1,sec:"up",hint:"Add only 1s"},
+  {k:"twos",label:"Twos",face:2,sec:"up",hint:"Add only 2s"},
+  {k:"threes",label:"Threes",face:3,sec:"up",hint:"Add only 3s"},
+  {k:"fours",label:"Fours",face:4,sec:"up",hint:"Add only 4s"},
+  {k:"fives",label:"Fives",face:5,sec:"up",hint:"Add only 5s"},
+  {k:"sixes",label:"Sixes",face:6,sec:"up",hint:"Add only 6s"},
+  {k:"threeKind",label:"3 of a kind",sec:"low",type:"sum",need:3,hint:"3 × the number"},
+  {k:"fourKind",label:"4 of a kind",sec:"low",type:"sum",need:4,hint:"4 × the number"},
+  {k:"fullHouse",label:"Full house",sec:"low",type:"fixed",val:25,hint:"3 + 2 · score 25"},
+  {k:"smStraight",label:"Small straight",sec:"low",type:"fixed",val:30,hint:"4 in a row · score 30"},
+  {k:"lgStraight",label:"Large straight",sec:"low",type:"fixed",val:40,hint:"5 in a row · score 40"},
+  {k:"yahtzee",label:"Yahtzee",sec:"low",type:"fixed",val:50,hint:"5 of a kind · score 50"},
+  {k:"chance",label:"Chance",sec:"low",type:"sum",hint:"Sum of all dice"},
+];
+const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- per-device memory ---------- */
+const LS = "yatzy.v1";
+function loadPrefs(){ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch{ return {}; } }
+function savePrefs(){ try{ localStorage.setItem(LS, JSON.stringify(prefs)); }catch{} }
+const prefs = Object.assign({mine:{}, name:"", lastCode:""}, loadPrefs());
+
+/* ---------- store: shared db, or a local fallback ---------- */
+let db = null, dbReady = null, mode = "pending";
+function getDb(){
+  if (!dbReady){
+    dbReady = (async () => {
+      try{
+        if (window.supabase?.createClient){ db = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:false}}); }
+      }catch{ db = null; }
+      mode = db ? "live" : "local";
+      return db;
+    })();
+  }
+  return dbReady;
+}
+const local = { games:{}, players:{}, subs:[] };
+const CL = "CLASSIC";
+const isLocal = c => !db || c === CL;
+const CLS = "yatzy.classic.v1";
+try{ const saved = JSON.parse(localStorage.getItem(CLS)); if (saved && saved.game){ local.games[CL] = saved.game; local.players[CL] = saved.players || {}; } }catch{}
+function persistClassic(){ try{ localStorage.setItem(CLS, JSON.stringify({game: local.games[CL], players: local.players[CL]})); }catch{} }
+function localEmit(code){ if (code === CL) persistClassic(); local.subs.filter(s => s.code === code).forEach(s => s.fire()); }
+const chains = {};
+function queue(path, fn){
+  const p = (chains[path] || Promise.resolve()).then(fn).catch(onWriteErr);
+  chains[path] = p; return p;
+}
+function onWriteErr(e){
+  const c = e && e.code;
+  if (c === "invalid_argument"){ toast("That change wasn't allowed."); }
+  else if (c === "quota_exceeded"){ toast("This scorecard is full. Remove an old game's players to make room."); }
+  else if (c === "unavailable"){ toast("Couldn't save. Check your connection and try again."); }
+  else { toast("Couldn't save that change."); }
+}
+const refetchers = {};
+const ok = r => { if (r.error) throw {code: r.error.code || "error", message: r.error.message}; return r.data; };
+const rowToPlayer = r => ({id:r.id, name:r.name, color:r.color, scores:r.scores||{}, yBonus:r.y_bonus||0, joinedAt:r.joined_at});
+const after = code => { const f = refetchers[code]; if (f) f(); };
+const store = {
+  async gameExists(code){
+    await getDb();
+    if (isLocal(code)) return !!local.games[code];
+    const d = ok(await db.from("yatzy_games").select("code").eq("code", code).maybeSingle());
+    return !!d;
+  },
+  async createGame(code, data){
+    await getDb();
+    if (isLocal(code)){ local.games[code] = data; local.players[code] = {}; return; }
+    ok(await db.from("yatzy_games").insert({code, name: data.name, round: data.round || 1}));
+  },
+  updateGame(code, patch){
+    if (isLocal(code)){ Object.assign(local.games[code], patch); localEmit(code); return Promise.resolve(); }
+    return queue("g/"+code, async () => { ok(await db.from("yatzy_games").update({round: patch.round}).eq("code", code)); after(code); });
+  },
+  setPlayer(code, pid, body){
+    if (isLocal(code)){ local.players[code][pid] = JSON.parse(JSON.stringify(body)); localEmit(code); return Promise.resolve(); }
+    return queue("p/"+pid, async () => {
+      ok(await db.from("yatzy_players").upsert({id:pid, game_code:code, name:body.name, color:+body.color||0, scores:body.scores||{}, y_bonus:+body.yBonus||0, joined_at: body.joinedAt || Date.now()}));
+      after(code);
+    });
+  },
+  updatePlayer(code, pid, patch){
+    if (isLocal(code)){
+      const p = local.players[code][pid]; if (!p) return Promise.resolve();
+      for (const [k,v] of Object.entries(patch)){
+        if (v && typeof v === "object" && !Array.isArray(v)) p[k] = Object.assign({}, p[k], v); else p[k] = v;
+      }
+      localEmit(code); return Promise.resolve();
+    }
+    return queue("p/"+pid, async () => {
+      for (const [k,v] of Object.entries(patch.scores || {})) ok(await db.rpc("yatzy_set_score", {p_id: pid, p_key: k, p_val: v}));
+      const rest = {};
+      if ("name" in patch) rest.name = patch.name;
+      if ("yBonus" in patch && !(patch.scores && "yahtzee" in patch.scores)) rest.y_bonus = patch.yBonus;
+      if ("yBonus" in patch && patch.yBonus > 0) rest.y_bonus = patch.yBonus;
+      if (Object.keys(rest).length) ok(await db.from("yatzy_players").update(rest).eq("id", pid));
+      after(code);
+    });
+  },
+  deletePlayer(code, pid){
+    if (isLocal(code)){ delete local.players[code][pid]; localEmit(code); return Promise.resolve(); }
+    return queue("p/"+pid, async () => { ok(await db.from("yatzy_players").delete().eq("id", pid)); after(code); });
+  },
+  subscribe(code, onGame, onPlayers, onErr){
+    if (isLocal(code)){
+      const s = { code, fire(){
+        onGame(local.games[code] || null);
+        onPlayers(Object.entries(local.players[code]||{}).map(([id,d]) => ({id, ...JSON.parse(JSON.stringify(d))})).sort((a,b)=>a.joinedAt-b.joinedAt));
+      }};
+      local.subs.push(s); setTimeout(() => s.fire(), 0);
+      return () => { local.subs = local.subs.filter(x => x !== s); };
+    }
+    let alive = true, busy = false, again = false;
+    const fetchAll = async () => {
+      if (busy){ again = true; return; } busy = true;
+      try{
+        const [g, ps] = await Promise.all([
+          db.from("yatzy_games").select("*").eq("code", code).maybeSingle(),
+          db.from("yatzy_players").select("*").eq("game_code", code).order("joined_at")
+        ]);
+        if (!alive) return;
+        if (g.error || ps.error) throw g.error || ps.error;
+        onGame(g.data ? {name: g.data.name, round: g.data.round} : null);
+        onPlayers((ps.data || []).map(rowToPlayer));
+      }catch(e){ onErr && onErr({code:"unavailable"}); }
+      finally{ busy = false; if (again && alive){ again = false; fetchAll(); } }
+    };
+    refetchers[code] = fetchAll;
+    const ch = db.channel("yatzy-" + code)
+      .on("postgres_changes", {event:"*", schema:"public", table:"yatzy_players", filter:"game_code=eq." + code}, fetchAll)
+      .on("postgres_changes", {event:"*", schema:"public", table:"yatzy_games", filter:"code=eq." + code}, fetchAll)
+      .subscribe(st => { if (st === "SUBSCRIBED") fetchAll(); });
+    const vis = () => { if (document.visibilityState === "visible") fetchAll(); };
+    document.addEventListener("visibilitychange", vis);
+    const poll = setInterval(fetchAll, 15000);
+    fetchAll();
+    return () => { alive = false; delete refetchers[code]; clearInterval(poll); document.removeEventListener("visibilitychange", vis); db.removeChannel(ch); };
+  }
+};
+
+/* ---------- state ---------- */
+let view = "lobby";       // lobby | game
+let code = "", game = null, players = [], unsub = null, loaded = false;
+let editAll = false, readOnly = false, lastScores = {}, flashKeys = new Set();
+const mineSet = () => new Set(prefs.mine[code] || []);
+let tv = false, wakeLock = null;
+const canEdit = p => !tv && (code === CL || (!readOnly && (editAll || mineSet().has(p.id))));
+
+function totals(p){
+  const s = p.scores || {};
+  const upper = CATS.filter(c=>c.sec==="up").reduce((a,c)=>a+(+s[c.k]||0),0);
+  const bonus = upper >= 63 ? 35 : 0;
+  const lowerBase = CATS.filter(c=>c.sec==="low").reduce((a,c)=>a+(+s[c.k]||0),0);
+  const yb = (+p.yBonus||0) * 100;
+  const filled = CATS.filter(c => s[c.k] !== undefined && s[c.k] !== null).length;
+  return {upper, bonus, upperTotal: upper+bonus, lower: lowerBase + yb, yb, total: upper+bonus+lowerBase+yb, filled};
+}
+/* Official Yahtzee scoring (Hasbro rules, forced Joker). */
+function scoreRoll(dice, k, joker){
+  const sum = dice.reduce((a,b)=>a+b,0);
+  const cnt = [0,0,0,0,0,0,0]; dice.forEach(d=>cnt[d]++);
+  const max = Math.max(...cnt);
+  const has = n => cnt[n] > 0;
+  const c = CATS.find(x=>x.k===k);
+  if (c.face) return cnt[c.face] * c.face;
+  switch(k){
+    case "threeKind": return max>=3 ? sum : 0;
+    case "fourKind": return max>=4 ? sum : 0;
+    case "fullHouse": return joker || (cnt.includes(3) && cnt.includes(2)) ? 25 : 0;
+    case "smStraight": return joker || (has(1)&&has(2)&&has(3)&&has(4)) || (has(2)&&has(3)&&has(4)&&has(5)) || (has(3)&&has(4)&&has(5)&&has(6)) ? 30 : 0;
+    case "lgStraight": return joker || (has(2)&&has(3)&&has(4)&&has(5)&&(has(1)||has(6))) ? 40 : 0;
+    case "yahtzee": return max===5 ? 50 : 0;
+    case "chance": return sum;
+  }
+  return 0;
+}
+/* Which open boxes a roll may go in, what each scores, and whether it earns a Yahtzee bonus. */
+function rollOptions(p, dice){
+  const s = p.scores || {};
+  const open = CATS.filter(c => s[c.k] === undefined || s[c.k] === null);
+  const isY = new Set(dice).size === 1;
+  const yFilled = s.yahtzee !== undefined && s.yahtzee !== null;
+  if (!isY || !yFilled){
+    return {bonus:false, joker:false, opts: open.map(c => ({c, v: scoreRoll(dice, c.k, false), ok:true}))};
+  }
+  const bonus = +s.yahtzee === 50;
+  const face = dice[0];
+  const up = CATS.find(c => c.face === face);
+  const upOpen = open.includes(up);
+  const lowOpen = open.filter(c => c.sec === "low");
+  let allowed;
+  if (upOpen) allowed = new Set([up.k]);
+  else if (lowOpen.length) allowed = new Set(lowOpen.map(c=>c.k));
+  else allowed = new Set(open.map(c=>c.k));
+  return {bonus, joker:true, face, upOpen, opts: open.map(c => ({c, v: scoreRoll(dice, c.k, !upOpen), ok: allowed.has(c.k)}))};
+}
+const colorOf = p => "var(--p" + ((+p.color||0) % 8) + ")";
+const initial = n => (String(n||"?").trim()[0] || "?").toUpperCase();
+
+/* ---------- rendering ---------- */
+function die(face, cls="", attrs=""){
+  if (!face) return `<button type="button" class="die unset ${cls}" ${attrs}><span class="ms">add</span></button>`;
+  const on = PIPS[face]; let h = "";
+  for (let i=0;i<9;i++) h += `<i class="${on.includes(i)?"on":""}"></i>`;
+  const tag = cls.includes("art") ? "span" : "button type=\"button\"";
+  return `<${tag} class="die ${cls}" ${attrs} aria-label="Die showing ${face}">${h}</${tag.split(" ")[0]}>`;
+}
+
+function renderBar(){
+  const bar = $("#bar");
+  if (view === "lobby"){
+    bar.innerHTML = `<h1>Yatzy Scorecard</h1>`;
+    return;
+  }
+  const live = mode === "live";
+  if (code === CL){
+    bar.innerHTML = `
+    <button class="icon-btn" id="back" aria-label="Back to start"><span class="ms">arrow_back</span></button>
+    <h1>${esc(game?.name || "Classic scorecard")}<small>${players.length} player${players.length===1?"":"s"} · One shared scorecard</small></h1>
+    <button class="icon-btn" id="tvBtn" aria-label="TV view" title="TV view"><span class="ms">tv</span></button>
+    <button class="icon-btn" id="more" aria-label="More options"><span class="ms">more_vert</span></button>`;
+    $("#back").onclick = leaveGame; $("#more").onclick = openMenu; $("#tvBtn").onclick = () => setTV(true); return;
+  }
+  bar.innerHTML = `
+    <button class="icon-btn" id="back" aria-label="Back to start"><span class="ms">arrow_back</span></button>
+    <h1>${esc(game?.name || "Game")}<small>${players.length} player${players.length===1?"":"s"} · ${live ? "Live" : "This device only"}</small></h1>
+    <button class="codechip" id="codechip" title="Copy game code"><span class="live ${live?"":"off"}"></span>${esc(code)}<span class="ms">content_copy</span></button>
+    <button class="icon-btn" id="tvBtn" aria-label="TV view" title="TV view"><span class="ms">tv</span></button>
+    <button class="icon-btn" id="more" aria-label="More options"><span class="ms">more_vert</span></button>`;
+  $("#tvBtn").onclick = () => setTV(true);
+  $("#back").onclick = leaveGame;
+  $("#codechip").onclick = copyCode;
+  $("#more").onclick = openMenu;
+}
+
+function renderLobby(){
+  const hasClassic = !!(local.games[CL] && Object.keys(local.players[CL]||{}).length);
+  const hashCode = (location.hash.match(/^#([A-Za-z0-9]{4})$/)||[])[1] || "";
+  $("#app").innerHTML = `
+    <section class="hero">
+      <div class="dice-art">${die(5,"art")}${die(5,"art")}${die(5,"art")}${die(5,"art")}${die(5,"art")}</div>
+      <h2>One scorecard, every player's phone.</h2>
+      <p>Roll your own dice at the table. Tap a box, pick the points, and the card adds up the bonuses and totals for everyone.</p>
+    </section>
+    <div class="lobby">
+      <form class="card elev" id="newForm">
+        <h3><span class="ms">casino</span>Start a game</h3>
+        <p>You'll get a code to share with the table.</p>
+        <label class="field"><input id="newName" maxlength="20" autocomplete="nickname" value="${esc(prefs.name)}" required><span>Your name</span></label>
+        <label class="field"><input id="gameName" maxlength="32" placeholder="Friday night"><span>Game name (optional)</span></label>
+        <div class="row"><button class="btn filled" type="submit"><span class="ms">play_arrow</span>Start game</button></div>
+      </form>
+      <form class="card" id="joinForm">
+        <h3><span class="ms">group_add</span>Join a game</h3>
+        <p>Enter the code shown on the host's screen.</p>
+        <label class="field"><input id="joinCode" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters" value="${esc(hashCode.toUpperCase())}" required><span>Game code</span></label>
+        <label class="field"><input id="joinName" maxlength="20" autocomplete="nickname" value="${esc(prefs.name)}"><span>Your name</span></label>
+        <div class="err" id="joinErr"></div>
+        <div class="row"><button class="btn tonal" type="submit"><span class="ms">login</span>Join</button><button class="btn text" type="button" id="watch">Just watch</button></div>
+      </form>
+      <form class="card" id="clForm">
+        <h3><span class="ms">table_view</span>Classic scorecard</h3>
+        <p>One device, one sheet. Pass it around and everyone's scores are kept together.</p>
+        <label class="field"><input id="clNames" maxlength="160" placeholder="Kim, Alex, Sam"><span>Players, separated by commas</span></label>
+        <div class="row"><button class="btn tonal" type="submit"><span class="ms">edit_note</span>${hasClassic ? "New classic game" : "Start classic game"}</button>${hasClassic ? `<button class="btn text" type="button" id="clResume">Continue current</button>` : ""}</div>
+      </form>
+    </div>
+    ${prefs.lastCode ? `<div class="row"><button class="btn outlined" id="resume"><span class="ms">history</span>Back to game ${esc(prefs.lastCode)}</button></div>` : ""}`;
+  $("#newForm").onsubmit = e => { e.preventDefault(); startGame(); };
+  $("#joinForm").onsubmit = e => { e.preventDefault(); joinGame(false); };
+  $("#watch").onclick = () => joinGame(true);
+  $("#clForm").onsubmit = e => { e.preventDefault(); startClassic(); };
+  const cr = $("#clResume"); if (cr) cr.onclick = () => openGame(CL);
+  const r = $("#resume"); if (r) r.onclick = () => openGame(prefs.lastCode);
+}
+
+function renderGame(){
+  const app = $("#app");
+  if (!loaded){ app.innerHTML = `<div class="empty-state"><span class="ms">hourglass_top</span>Loading game ${esc(code)}…</div>`; return; }
+  if (!game){ app.innerHTML = `<div class="empty-state"><span class="ms">search_off</span><div>Game ${esc(code)} no longer exists.</div><button class="btn tonal" id="goLobby">Back to start</button></div>`; $("#goLobby").onclick = leaveGame; return; }
+  const mine = mineSet();
+  const t = players.map(totals);
+  const done = players.length > 0 && t.every(x => x.filled === 13);
+  const ranked = players.map((p,i)=>({p, t:t[i]})).sort((a,b)=>b.t.total-a.t.total);
+  let html = "";
+  if (mode === "local" && code !== CL) html += `<div class="banner"><span class="ms">cloud_off</span><div>Couldn't reach the live server, so scores stay on this device. Check your internet connection and reload to play across phones.</div></div>`;
+  if (readOnly) html += `<div class="banner"><span class="ms">visibility</span><div>You're watching. Your access to this page doesn't allow entering scores.</div></div>`;
+  if (done){
+    const top = ranked[0].t.total, winners = ranked.filter(r=>r.t.total===top).map(r=>esc(r.p.name));
+    html += `<div class="banner win"><span class="ms" style="font-variation-settings:'FILL' 1">trophy</span><div class="grow"><b>${winners.join(" and ")}</b> ${winners.length>1?"tie":"wins"} with <b class="num">${top}</b> points.</div>${readOnly?"":`<button class="btn filled" id="again"><span class="ms">replay</span>Play again</button>`}</div>`;
+  }
+  if (!players.length){
+    html += `<div class="sheet-wrap"><div class="empty-state"><span class="ms">group</span><div>${code===CL?"No players yet. Add everyone at the table.":`No players yet. Share code <b>${esc(code)}</b> or add a player on this device.`}</div></div></div>`;
+    app.innerHTML = html; bindGame(); return;
+  }
+  if (tv) html += `<div class="tvhead"><div><h2>${esc(game.name || "Yatzy")}</h2>${code!==CL?`<p>Join on your phone with code <b class="tvcode">${esc(code)}</b></p>`:`<p>${players.length} players · Round ${+game.round||1}</p>`}</div><button class="btn tonal" id="tvExit"><span class="ms">close_fullscreen</span>Exit TV view</button></div>`;
+  html += `<div class="board">`;
+  html += `<div class="standings">` + ranked.map((r,i) => `
+    <div class="stand ${i===0 && r.t.total>0 ? "lead" : ""}">
+      <span class="avatar" style="--pc:${colorOf(r.p)}">${esc(initial(r.p.name))}</span>
+      <div class="meta"><span class="nm">${esc(r.p.name)}</span><span class="sub">${i===0&&r.t.total>0?"Leading · ":""}${r.t.filled}/13 boxes</span></div>
+      <span class="tot num">${r.t.total}</span>
+    </div>`).join("") + `</div>`;
+
+  const head = players.map(p => `<th class="pcol"><button class="phead" data-pid="${p.id}" aria-label="Options for ${esc(p.name)}">
+      <span class="avatar sm" style="--pc:${colorOf(p)}">${esc(initial(p.name))}</span>
+      <span class="nm">${esc(p.name)}</span>${code===CL?"":mine.has(p.id)?`<span class="tag">You</span>`:`<span class="tag ghost">${editAll&&!readOnly?"Editable":"Viewing"}</span>`}</button></th>`).join("");
+  const cell = (p, c) => {
+    const v = (p.scores||{})[c.k]; const has = v !== undefined && v !== null;
+    const ed = canEdit(p); const fk = p.id+":"+c.k;
+    const cls = ["cell", has ? (+v===0?"zero":"") : "empty", ed?"":"ro", flashKeys.has(fk)?"flash":""].join(" ");
+    return `<td class="${mine.has(p.id)?"mine":""}"><button class="${cls} num" ${ed?`data-pid="${p.id}" data-k="${c.k}"`:"tabindex=-1"} aria-label="${esc(p.name)} ${c.label}: ${has?v:"empty"}">${has ? v : "–"}</button></td>`;
+  };
+  const rows = sec => CATS.filter(c=>c.sec===sec).map(c => `<tr><th class="cat" scope="row"><b>${c.label}</b><i>${c.hint}</i></th>${players.map(p=>cell(p,c)).join("")}</tr>`).join("");
+  const sumRow = (label, hint, fn, cls="sum") => `<tr class="${cls}"><th class="cat" scope="row"><b>${label}</b>${hint?`<i>${hint}</i>`:""}</th>${players.map((p,i)=>`<td class="num ${mine.has(p.id)&&cls!=="grand"?"mine":""}">${fn(p,t[i])}</td>`).join("")}</tr>`;
+
+  html += `<div class="sheet-wrap"><table class="score">
+    <thead><tr><th class="cat" style="vertical-align:bottom"><span class="dim" style="font-size:12px;font-weight:500;letter-spacing:.5px">Tap a box to score</span></th>${head}</tr></thead>
+    <tbody>
+      <tr class="sec"><th class="cat" colspan="${players.length+1}">Upper section</th></tr>
+      ${rows("up")}
+      ${sumRow("Upper score","Bonus at 63",(p,x)=>{const pct=Math.min(100,x.upper/63*100);return `<div class="prog ${x.upper>=63?"done":""}"><span>${x.upper}<span class="dim"> / 63</span></span><span class="bar"><i style="width:${pct}%"></i></span></div>`;})}
+      ${sumRow("Bonus","+35 for 63 or more",(p,x)=>x.bonus?`<span class="bonus-on">35</span>`:`<span class="dim">${x.upper<63?"−"+(63-x.upper):"0"}</span>`)}
+      ${sumRow("Upper total","",(p,x)=>`<b>${x.upperTotal}</b>`)}
+      <tr class="sec"><th class="cat" colspan="${players.length+1}">Lower section</th></tr>
+      ${rows("low")}
+      <tr><th class="cat" scope="row"><b>Yahtzee bonus</b><i>+100 per extra Yahtzee</i></th>${players.map(p=>{const n=+p.yBonus||0;const ed=canEdit(p)&&+(p.scores||{}).yahtzee===50;return `<td class="${mine.has(p.id)?"mine":""}"><button class="cell num ${n?"":"empty"} ${ed?"":"ro"}" ${ed?`data-pid="${p.id}" data-yb="1"`:"tabindex=-1"} aria-label="${esc(p.name)} Yahtzee bonus ${n}">${n? `${n*100}` : "–"}</button></td>`;}).join("")}</tr>
+      ${sumRow("Lower total","",(p,x)=>`<b>${x.lower}</b>`)}
+      ${sumRow("Grand total","",(p,x)=>x.total,"grand")}
+    </tbody></table></div></div>`;
+  app.innerHTML = html;
+  bindGame();
+}
+
+function bindGame(){
+  document.querySelectorAll("button.cell[data-k]").forEach(b => b.onclick = () => {
+    openScore(b.dataset.pid, b.dataset.k);
+  });
+  document.querySelectorAll("button.cell[data-yb]").forEach(b => b.onclick = () => openYBonus(b.dataset.pid));
+  document.querySelectorAll(".phead").forEach(b => b.onclick = () => openPlayer(b.dataset.pid));
+  const a = $("#again"); if (a) a.onclick = confirmAgain;
+  const tx = $("#tvExit"); if (tx) tx.onclick = () => setTV(false);
+}
+async function setTV(on){
+  tv = on; document.body.classList.toggle("tv", on); closeMenu(); render(); window.scrollTo(0,0);
+  if (on){
+    try{ await document.documentElement.requestFullscreen?.(); }catch{}
+    try{ wakeLock = await navigator.wakeLock?.request("screen"); }catch{}
+  } else {
+    try{ if (document.fullscreenElement) await document.exitFullscreen(); }catch{}
+    try{ await wakeLock?.release(); }catch{} wakeLock = null;
+  }
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && tv) setTV(false); });
+
+function render(){
+  renderBar();
+  view === "lobby" ? renderLobby() : renderGame();
+  $("#fab").hidden = tv || !(view === "game" && loaded && game && !readOnly);
+}
+
+/* ---------- flows ---------- */
+function newCode(){ let s=""; for(let i=0;i<4;i++) s += ALPHA[Math.floor(Math.random()*ALPHA.length)]; return s; }
+const newPid = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+async function startGame(){
+  const name = $("#newName").value.trim(); if (!name) return;
+  const gname = $("#gameName").value.trim();
+  prefs.name = name; savePrefs();
+  try{
+    let c = newCode();
+    for (let i=0;i<5 && await store.gameExists(c);i++) c = newCode();
+    await store.createGame(c, {name: gname || "Yatzy game", createdAt: Date.now(), round: 1});
+    await addPlayer(c, name);
+    openGame(c);
+  }catch(e){ onWriteErr(e); }
+}
+async function startClassic(){
+  const names = $("#clNames").value.split(",").map(x=>x.trim()).filter(Boolean).slice(0,8);
+  await getDb();
+  local.games[CL] = {name: "Classic scorecard", createdAt: Date.now(), round: 1};
+  local.players[CL] = {};
+  const now = Date.now();
+  (names.length ? names : ["Player 1","Player 2"]).forEach((n,i) => { local.players[CL][newPid()+i] = {name:n.slice(0,20), color:i, scores:{}, yBonus:0, joinedAt: now+i}; });
+  persistClassic();
+  openGame(CL);
+}
+async function joinGame(watchOnly){
+  const c = $("#joinCode").value.trim().toUpperCase();
+  const name = $("#joinName").value.trim();
+  const err = $("#joinErr");
+  if (!/^[A-Z0-9]{4}$/.test(c)){ err.textContent = "Codes are four letters or numbers."; return; }
+  if (!watchOnly && !name){ err.textContent = "Add your name to join, or choose Just watch."; return; }
+  err.textContent = "Checking…";
+  try{
+    if (!(await store.gameExists(c))){ err.textContent = `No game with code ${c}. Check the code with the host.` + (mode==="local" ? " Couldn't reach the live server." : ""); return; }
+  }catch(e){ err.textContent = "Couldn't reach the game. Try again in a moment."; return; }
+  if (!watchOnly){ prefs.name = name; savePrefs(); await getDb(); }
+  openGame(c, watchOnly ? null : name);
+}
+async function addPlayer(c, name){
+  const pid = newPid();
+  const used = new Set(players.map(p=>p.color));
+  let color = 0; while (used.has(color) && color < 7) color++;
+  if (c !== code) color = 0;
+  if (c !== CL){ prefs.mine[c] = [...(prefs.mine[c]||[]), pid]; savePrefs(); }
+  await store.setPlayer(c, pid, {name, color, scores:{}, yBonus:0, joinedAt: Date.now()});
+  return pid;
+}
+async function openGame(c, joinAs){
+  await getDb();
+  if (unsub) unsub();
+  code = c; view = "game"; loaded = false; game = null; players = []; readOnly = false; lastScores = {};
+  if (c !== CL){ prefs.lastCode = c; savePrefs(); }
+  render();
+  let gotG = false, gotP = false, pendingJoin = joinAs;
+  unsub = store.subscribe(c,
+    g => { game = g; gotG = true; loaded = gotG && gotP; render(); },
+    ps => {
+      flashKeys = new Set();
+      for (const p of ps){ for (const k of CATS.map(x=>x.k)){ const v=(p.scores||{})[k]; const key=p.id+":"+k; if (key in lastScores && lastScores[key]!==v) flashKeys.add(key); lastScores[key]=v; } }
+      players = ps; gotP = true; loaded = gotG && gotP;
+      if (pendingJoin && loaded){
+        const name = pendingJoin; pendingJoin = null;
+        const already = ps.find(p => mineSet().has(p.id));
+        if (!already){
+          const used = new Set(ps.map(p=>+p.color)); let color=0; while(used.has(color)&&color<7) color++;
+          const pid = newPid(); prefs.mine[c] = [...(prefs.mine[c]||[]), pid]; savePrefs();
+          store.setPlayer(c, pid, {name, color, scores:{}, yBonus:0, joinedAt: Date.now()});
+        }
+      }
+      render();
+    },
+    e => { if (e?.code === "revoked"){ readOnly = true; toast("Access to this game changed."); render(); } else if (e?.code === "unavailable"){ toast("Connection hiccup. Retrying…"); } }
+  );
+}
+function leaveGame(){
+  if (unsub) unsub(); unsub = null;
+  if (tv) setTV(false);
+  view = "lobby"; code = ""; closeMenu();
+  render();
+}
+
+/* ---------- dialogs ---------- */
+const dlg = $("#dlg"), dlgIn = $("#dlgIn");
+function openDlg(html, bind){
+  dlgIn.innerHTML = html; bind && bind();
+  if (!dlg.open){ try{ dlg.showModal(); }catch{ dlg.setAttribute("open",""); } }
+}
+function closeDlg(){ try{ dlg.close(); }catch{ dlg.removeAttribute("open"); } }
+dlg.addEventListener("click", e => { if (e.target === dlg) closeDlg(); });
+const P = id => players.find(p => p.id === id);
+
+function setScore(pid, k, v){
+  const patch = {scores:{[k]: v}};
+  if (k === "yahtzee" && v !== 50){ patch.yBonus = 0; }
+  store.updatePlayer(code, pid, patch);
+  closeDlg();
+}
+
+function openScore(pid, k){
+  const p = P(pid), c = CATS.find(x=>x.k===k); if (!p||!c) return;
+  const cur = (p.scores||{})[k]; const has = cur !== undefined && cur !== null;
+  const head = `<h4><span class="avatar sm" style="--pc:${colorOf(p)}">${esc(initial(p.name))}</span>${c.label}</h4><p class="lede">${esc(p.name)} · ${c.hint}</p>`;
+  const clear = has ? `<button class="btn text" id="clr" type="button">Clear box</button>` : "";
+  if (c.face){
+    let chips = "";
+    for (let n=0;n<=5;n++){ const v=n*c.face; chips += `<button type="button" class="chip ${has&&+cur===v?"sel":""} ${v===0?"zero":""}" data-v="${v}"><b class="num">${v}</b><small>${n===0?"Scratch":n+" × "+c.face}</small></button>`; }
+    openDlg(`${head}<div class="chips">${chips}</div><div class="actions">${clear}<span class="spacer"></span><button class="btn text" id="cancel" type="button">Cancel</button></div>`, () => {
+      dlgIn.querySelectorAll(".chip").forEach(b => b.onclick = () => setScore(pid, k, +b.dataset.v));
+      bindCommon(pid, k);
+    });
+  } else if (c.type === "fixed"){
+    openDlg(`${head}<div class="chips" style="grid-template-columns:1fr 1fr">
+        <button type="button" class="chip ${has&&+cur===c.val?"sel":""}" data-v="${c.val}" style="height:88px"><b class="num" style="font-size:32px">${c.val}</b><small>Score it</small></button>
+        <button type="button" class="chip zero ${has&&+cur===0?"sel":""}" data-v="0" style="height:88px"><b class="num" style="font-size:32px">0</b><small>Scratch</small></button>
+      </div><div class="actions">${clear}<span class="spacer"></span><button class="btn text" id="cancel" type="button">Cancel</button></div>`, () => {
+      dlgIn.querySelectorAll(".chip").forEach(b => b.onclick = () => setScore(pid, k, +b.dataset.v));
+      bindCommon(pid, k);
+    });
+  } else if (c.need){
+    let chips = "";
+    for (let f=1; f<=6; f++){ const v=f*c.need; chips += `<button type="button" class="chip kind ${has&&+cur===v?"sel":""}" data-v="${v}">${die(f,"art")}<small>${c.need} × ${f} = <b class="num">${v}</b></small></button>`; }
+    openDlg(`${head}<div class="chips">${chips}</div><div class="actions">${clear}<button class="btn text" type="button" id="scratch">Scratch (0)</button><span class="spacer"></span><button class="btn text" id="cancel" type="button">Cancel</button></div>`, () => {
+      dlgIn.querySelectorAll(".chip").forEach(b => b.onclick = () => setScore(pid, k, +b.dataset.v));
+      $("#scratch").onclick = () => setScore(pid, k, 0);
+      bindCommon(pid, k);
+    });
+  } else {
+    let chips = `<button type="button" class="chip zero ${has&&+cur===0?"sel":""}" data-v="0"><b class="num">0</b><small>Scratch</small></button>`;
+    for (let v=5; v<=30; v++) chips += `<button type="button" class="chip ${has&&+cur===v?"sel":""}" data-v="${v}"><b class="num">${v}</b></button>`;
+    openDlg(`${head}<div class="chips sumchips">${chips}</div><div class="actions">${clear}<span class="spacer"></span><button class="btn text" id="cancel" type="button">Cancel</button></div>`, () => {
+      dlgIn.querySelectorAll(".chip").forEach(b => b.onclick = () => setScore(pid, k, +b.dataset.v));
+      bindCommon(pid, k);
+    });
+  }
+}
+function openRoll(pid, focusK){
+  const p = P(pid); if (!p) return;
+  let dice = [0,0,0,0,0];
+  const head = `<h4><span class="avatar sm" style="--pc:${colorOf(p)}">${esc(initial(p.name))}</span>Score a roll</h4><p class="lede">${esc(p.name)} · Tap each die to match your final roll</p>`;
+  openDlg(`${head}<div class="dice" id="diceRow"></div><div id="rollOut"></div>
+    <div class="actions">${focusK?`<button class="btn text" type="button" id="manual">Type a score instead</button>`:""}<span class="spacer"></span><button class="btn text" type="button" id="cancel">Cancel</button></div>`, () => {
+    const draw = () => {
+      $("#diceRow").innerHTML = dice.map((d,i)=>die(d,"",`data-i="${i}"`)).join("") + `<button type="button" class="icon-btn" id="dReset" aria-label="Clear dice" ${dice.some(Boolean)?"":"hidden"}><span class="ms">restart_alt</span></button>`;
+      dlgIn.querySelectorAll("#diceRow .die").forEach(b => b.onclick = () => { const i=+b.dataset.i; dice[i] = dice[i] >= 6 ? 1 : dice[i]+1; draw(); });
+      const rs = $("#dReset"); if (rs) rs.onclick = () => { dice = [0,0,0,0,0]; draw(); };
+      const out = $("#rollOut");
+      if (!dice.every(Boolean)){ out.innerHTML = `<div class="dice-total"><b class="num dim">${dice.reduce((a,b)=>a+b,0)||"–"}</b>Set all five dice to see what each box scores</div>`; return; }
+      const r = rollOptions(p, dice);
+      let note = "";
+      if (r.joker){
+        note = `<div class="banner"><span class="ms">auto_awesome</span><div>${r.bonus?"<b>Yahtzee bonus +100.</b> ":""}${r.upOpen ? `Joker rule: this Yahtzee must go in ${CATS.find(c=>c.face===r.face).label}.` : "Joker rule: Full house, straights and the rest of the lower section score in full."}</div></div>`;
+      }
+      const opts = r.opts.slice().sort((a,b) => (b.c.k===focusK) - (a.c.k===focusK) || (b.ok - a.ok) || (b.v - a.v));
+      out.innerHTML = note + `<div class="opts">` + opts.map(o => `<button type="button" class="opt ${o.c.k===focusK?"focus":""}" data-k="${o.c.k}" data-v="${o.v}" ${o.ok?"":"disabled"}><span><b>${o.c.label}</b><i>${o.ok ? o.c.hint : "Not allowed for this Yahtzee"}</i></span><span class="pts num ${o.v===0?"zero":""}">${o.v}</span></button>`).join("") + `</div>`;
+      out.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+        const patch = {scores:{[b.dataset.k]: +b.dataset.v}};
+        if (r.bonus) patch.yBonus = (+p.yBonus||0) + 1;
+        store.updatePlayer(code, pid, patch); closeDlg();
+        toast(`${p.name}: ${+b.dataset.v} in ${CATS.find(c=>c.k===b.dataset.k).label}${r.bonus?" + 100 bonus":""}`);
+      });
+    };
+    draw();
+    $("#cancel").onclick = closeDlg;
+    const m = $("#manual"); if (m) m.onclick = () => openScore(pid, focusK);
+  });
+}
+function bindCommon(pid, k){
+  const cl = $("#clr"); if (cl) cl.onclick = () => setScore(pid, k, null);
+  const ca = $("#cancel"); if (ca) ca.onclick = closeDlg;
+}
+
+function openYBonus(pid){
+  const p = P(pid); if (!p) return; let n = +p.yBonus||0;
+  openDlg(`<h4><span class="avatar sm" style="--pc:${colorOf(p)}">${esc(initial(p.name))}</span>Yahtzee bonus</h4>
+    <p class="lede">Each extra Yahtzee after scoring 50 adds 100 points.</p>
+    <div class="stepper"><button class="icon-btn" id="dec" aria-label="One fewer"><span class="ms">remove</span></button><output class="num" id="yn"></output><button class="icon-btn" id="inc" aria-label="One more"><span class="ms">add</span></button></div>
+    <div class="dice-total" id="ypts"></div>
+    <div class="actions"><button class="btn text" id="cancel">Cancel</button><button class="btn filled" id="ysave">Save</button></div>`, () => {
+    const d = () => { $("#yn").textContent = n; $("#ypts").textContent = `${n*100} bonus points`; };
+    d();
+    $("#dec").onclick = () => { n = Math.max(0,n-1); d(); };
+    $("#inc").onclick = () => { n = Math.min(12,n+1); d(); };
+    $("#ysave").onclick = () => { store.updatePlayer(code, pid, {yBonus:n}); closeDlg(); };
+    $("#cancel").onclick = closeDlg;
+  });
+}
+
+function openPlayer(pid){
+  const p = P(pid); if (!p) return;
+  const ed = canEdit(p); const t = totals(p);
+  openDlg(`<h4><span class="avatar" style="--pc:${colorOf(p)}">${esc(initial(p.name))}</span>${esc(p.name)}</h4>
+    <p class="lede num">${t.total} points · ${t.filled} of 13 boxes filled${mineSet().has(pid)?" · Playing on this device":""}</p>
+    ${ed ? `<label class="field"><input id="pname" maxlength="20" value="${esc(p.name)}"><span>Name</span></label>` : `<p class="lede" style="margin:0">You're viewing ${esc(p.name)}'s column. Turn on “Edit all players” in the menu to change it.</p>`}
+        <div class="actions">${ed?`<button class="btn text" id="rm" style="color:var(--error)">Remove player</button><span class="spacer"></span>`:""}<button class="btn text" id="cancel">${ed?"Cancel":"Close"}</button>${ed?`<button class="btn filled" id="psave">Save</button>`:""}</div>`, () => {
+    $("#cancel").onclick = closeDlg;
+    if (!ed) return;
+    $("#psave").onclick = () => { const n = $("#pname").value.trim(); if (n && n !== p.name) store.updatePlayer(code, pid, {name:n}); closeDlg(); };
+    $("#rm").onclick = () => openDlg(`<h4>Remove ${esc(p.name)}?</h4><p class="lede">Their ${t.total} points and column are deleted for everyone in this game.</p>
+      <div class="actions"><button class="btn text" id="cancel">Keep</button><button class="btn danger" id="rmYes">Remove</button></div>`, () => {
+        $("#cancel").onclick = closeDlg;
+        $("#rmYes").onclick = () => { store.deletePlayer(code, pid); prefs.mine[code] = (prefs.mine[code]||[]).filter(x=>x!==pid); savePrefs(); closeDlg(); toast(`Removed ${p.name}`); };
+      });
+  });
+}
+
+function openAddPlayer(){
+  openDlg(`<h4><span class="ms" style="color:var(--primary)">person_add</span>Add a player here</h4>
+    <p class="lede">${code===CL ? "They get their own column on this scorecard." : `For someone sharing this device. Players on their own phone should join with code <b>${esc(code)}</b>.`}</p>
+    <form id="addF" style="display:contents"><label class="field"><input id="aname" maxlength="20" required><span>Player name</span></label>
+    <div class="actions"><button class="btn text" type="button" id="cancel">Cancel</button><button class="btn filled" type="submit">Add</button></div></form>`, () => {
+    $("#cancel").onclick = closeDlg;
+    setTimeout(() => $("#aname")?.focus(), 50);
+    $("#addF").onsubmit = e => { e.preventDefault(); const n = $("#aname").value.trim(); if (!n) return; addPlayer(code, n); closeDlg(); };
+  });
+}
+
+function confirmAgain(){
+  openDlg(`<h4><span class="ms" style="color:var(--primary)">replay</span>Start a new round?</h4>
+    <p class="lede">Every player's scores are cleared for everyone. Players and the code ${esc(code)} stay the same.</p>
+    <div class="actions"><button class="btn text" id="cancel">Cancel</button><button class="btn filled" id="go">Clear scores</button></div>`, () => {
+    $("#cancel").onclick = closeDlg;
+    $("#go").onclick = () => {
+      players.forEach(p => store.setPlayer(code, p.id, {name:p.name, color:+p.color||0, scores:{}, yBonus:0, joinedAt:p.joinedAt||Date.now()}));
+      store.updateGame(code, {round: (+game.round||1)+1});
+      closeDlg(); closeMenu(); toast("New round started");
+    };
+  });
+}
+
+/* ---------- menu, share, toast ---------- */
+const menu = $("#menu");
+function openMenu(e){
+  e.stopPropagation();
+  if (!menu.hidden){ closeMenu(); return; }
+  menu.innerHTML = `
+    ${code===CL?"":`<button id="mShare"><span class="ms">share</span>Copy invite</button>`}
+    ${readOnly?"":`<button id="mAdd"><span class="ms">person_add</span>Add player${code===CL?"":" here"}</button>
+    ${code===CL?"":`<button id="mEdit" class="switch-row"><span style="display:flex;gap:12px;align-items:center"><span class="ms">edit</span>Edit all players</span><span class="sw ${editAll?"on":""}"></span></button>`}
+    <hr><button id="mAgain"><span class="ms">replay</span>New round</button>`}
+    <button id="mTv"><span class="ms">tv</span>TV view for casting</button>
+    <button id="mLeave"><span class="ms">logout</span>Leave to start screen</button>`;
+  menu.hidden = false;
+  const ms = $("#mShare"); if (ms) ms.onclick = () => { closeMenu(); copyInvite(); };
+  $("#mLeave").onclick = leaveGame;
+  $("#mTv").onclick = () => setTV(true);
+  if (!readOnly){
+    $("#mAdd").onclick = () => { closeMenu(); openAddPlayer(); };
+    const me = $("#mEdit"); if (me) me.onclick = () => { editAll = !editAll; closeMenu(); render(); toast(editAll ? "You can now edit every player's column" : "Only your own columns are editable"); };
+    $("#mAgain").onclick = () => { closeMenu(); confirmAgain(); };
+  }
+}
+function closeMenu(){ menu.hidden = true; }
+document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) closeMenu(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
+
+async function copyText(t, okMsg){
+  try{ await navigator.clipboard.writeText(t); toast(okMsg); }
+  catch{ toast(t); }
+}
+function copyCode(){ copyText(code, `Code ${code} copied`); }
+function copyInvite(){
+  const link = SHARE_BASE ? `${SHARE_BASE}#${code}` : "";
+  copyText(`Join my Yatzy game with code ${code}${link ? ": " + link : ""}`, "Invite copied");
+}
+let snackT;
+function toast(msg){ const s = $("#snack"); s.textContent = msg; s.hidden = false; clearTimeout(snackT); snackT = setTimeout(() => s.hidden = true, 3200); }
+
+$("#fab").onclick = openAddPlayer;
+
+/* ---------- boot ---------- */
+render();
+getDb().then(() => {
+  const hc = (location.hash.match(/^#([A-Za-z0-9]{4})$/)||[])[1];
+  if (hc && view === "lobby"){
+    const c = hc.toUpperCase();
+    if ((prefs.mine[c]||[]).length) openGame(c);
+  } else if (prefs.lastCode && view === "lobby" && mode === "live" && (prefs.mine[prefs.lastCode]||[]).length){
+    openGame(prefs.lastCode);
+  }
+  render();
+});
+})();
+</script>
+
+</body>
+</html>
